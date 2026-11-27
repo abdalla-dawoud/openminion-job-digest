@@ -49,15 +49,6 @@ with free-tier hosted models (Groq: qwen3.8-27b, gpt-oss-20b, gpt-oss-120b;
    documented rough size of the default system/context envelope would help
    capacity planning on small quotas.
 
-## Demo choices driven by these findings
-
-- Feeds are fetched deterministically in-process (the same functions are
-  exposed to the Agent as tools), while the Agent performs a verifiable
-  forced tool call (`load_seen_job_ids`) and the shortlist turn.
-- Retries with 65s backoff on `RATE_LIMITED` / request-too-large errors.
-- Structured output remains the preferred path; the JSON fallback keeps the
-  workflow usable on tight free-tier budgets.
-
 ## Free-tier provider notes (added 2026-11-27)
 
 - OpenRouter free models: 50 requests/day per account. After that every call returns 429 (`free-models-per-day`). Plan for a fallback provider.
@@ -65,3 +56,11 @@ with free-tier hosted models (Groq: qwen3.8-27b, gpt-oss-20b, gpt-oss-120b;
 - Groq free tier caps each request budget (about 8k tokens per minute). The full brain-loop prompt gets HTTP 413, so the digest uses the runtime LLM client for generation and the Agent only for the verifiable forced tool call.
 - Provider fallback chain in `job_digest.py`: primary config first, then `--fallback-config` (Groq qwen/qwen3.8-27b). Check `GET /openai/v1/models` for live model ids; a stale id gives 404.
 - Free job feeds are thin (Remotive about 16 listings, mostly non-engineering). Added the Hacker News "Who is hiring" thread via the Algolia API as a third source, which gave real engineering leads.
+
+## Actionable product feedback
+
+1. Document the minimum model tier for model-choice tool routing, or fall back to forced execution when the task_update parse fails.
+2. Add a programmatic way to pre-authorize WRITE-scope tools from the SDK (for example allow_scopes on Agent).
+3. Note the session turn-lease TTL after a killed process in the SDK docs.
+4. Document the rough size of the default prompt envelope for small token quotas.
+5. Give reasoning models an SDK-level completion cap or reasoning-effort option so default budgets are not consumed by thinking (empty content with default budget; 8192 errored on one OpenRouter model, 4096 worked).
