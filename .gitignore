@@ -1,0 +1,3 @@
+.venv/
+data/seen_jobs.json
+__pycache__/
